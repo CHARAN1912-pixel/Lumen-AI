@@ -3,53 +3,64 @@
 <html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUMEN - Lightning Fast AI Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f1012">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>LUMEN - Mobile AI Assistant</title>
+    
+    <!-- PWA Manifest Data URI for Add to Home Screen / Install -->
+    <link rel="manifest" href='data:application/json;charset=utf-8,{"name":"LUMEN AI Assistant","short_name":"LUMEN","start_url":"./","display":"standalone","background_color":"%230f1012","theme_color":"%230f1012","icons":[{"src":"https://placehold.co/192x192/4285f4/ffffff?text=L","sizes":"192x192","type":"image/png"},{"src":"https://placehold.co/512x512/4285f4/ffffff?text=L","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4285f4/ffffff?text=L">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f1012; color: #f1f3f4; }
-        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f1012; color: #f1f3f4; -webkit-tap-highlight-color: transparent; }
+        .chat-scroll::-webkit-scrollbar { width: 4px; }
         .chat-scroll::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 9999px; }
         @keyframes pulse-glow { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } }
         .animate-pulse-glow { animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         .gemini-gradient { background: linear-gradient(135deg, #4285f4 0%, #9b72cb 50%, #ea4335 100%); }
         .gemini-text-gradient { background: linear-gradient(135deg, #8ab4f8 0%, #c58af9 50%, #f28b82 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .sidebar-transition { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-        pre { background: #1a1b1e; padding: 14px; border-radius: 14px; overflow-x: auto; border: 1px solid #2d2e32; margin-top: 10px; margin-bottom: 10px; }
-        code { font-family: monospace; font-size: 0.875rem; color: #a8c7fa; }
-        .glass-panel { background: rgba(30, 31, 34, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        pre { background: #1a1b1e; padding: 12px; border-radius: 12px; overflow-x: auto; border: 1px solid #2d2e32; margin-top: 8px; margin-bottom: 8px; max-width: 100%; }
+        code { font-family: monospace; font-size: 0.8rem; color: #a8c7fa; word-break: break-all; }
+        .glass-panel { background: rgba(30, 31, 34, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
     </style>
 </head>
-<body class="h-full flex overflow-hidden selection:bg-blue-500 selection:text-white">
+<body class="h-[100dvh] flex overflow-hidden selection:bg-blue-500 selection:text-white">
+
+    <div id="sidebarBackdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
     <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-[#17181c] border-r border-[#2d2e32] flex flex-col justify-between transform -translate-x-full md:translate-x-0 sidebar-transition shadow-2xl">
         <div class="p-4 flex flex-col h-full">
-            <div class="flex items-center justify-between mb-6">
-                <button onclick="startNewChat()" class="flex items-center space-x-2.5 bg-[#25262b] hover:bg-[#2f3136] border border-[#3f4248] px-4 py-2.5 rounded-2xl text-xs font-semibold text-white transition shadow-sm group">
+            <div class="flex items-center justify-between mb-5">
+                <button onclick="startNewChat()" class="flex items-center space-x-2.5 bg-[#25262b] hover:bg-[#2f3136] border border-[#3f4248] px-4 py-3 rounded-2xl text-xs font-semibold text-white transition shadow-sm group">
                     <svg class="w-4 h-4 text-blue-400 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
                     <span>New chat</span>
                 </button>
-                <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white p-2 rounded-xl hover:bg-[#25262b]">
+                <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white p-2.5 rounded-xl hover:bg-[#25262b]">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
 
             <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">Assistant Modes</div>
             <div class="space-y-1.5 mb-6 flex-shrink-0">
-                <button onclick="setMode('general')" id="mode-btn-general" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-white bg-blue-600/20 border border-blue-500/40 transition shadow-sm">
+                <button onclick="setMode('general')" id="mode-btn-general" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-semibold text-white bg-blue-600/20 border border-blue-500/40 transition shadow-sm">
                     <span class="text-sm">💬</span>
                     <span>General Chat</span>
                 </button>
-                <button onclick="setMode('research')" id="mode-btn-research" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
+                <button onclick="setMode('research')" id="mode-btn-research" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
                     <span class="text-sm">🔬</span>
                     <span>Deep Research</span>
                 </button>
-                <button onclick="setMode('coding')" id="mode-btn-coding" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
+                <button onclick="setMode('coding')" id="mode-btn-coding" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
                     <span class="text-sm">🧑‍💻</span>
                     <span>Coding Expert</span>
                 </button>
-                <button onclick="setMode('imagegen')" id="mode-btn-imagegen" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
+                <button onclick="setMode('imagegen')" id="mode-btn-imagegen" class="w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
                     <span class="text-sm">🖼️</span>
                     <span>Image Studio</span>
                 </button>
@@ -57,11 +68,11 @@
 
             <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">Recent Activity</div>
             <div id="chatHistoryList" class="chat-scroll flex-1 overflow-y-auto space-y-1 pr-1 text-xs">
-                <div class="px-3 py-2.5 rounded-xl text-gray-400 italic bg-[#212226]/50">Lightning Session</div>
+                <div class="px-3 py-3 rounded-xl text-gray-400 italic bg-[#212226]/50">Mobile Session Active</div>
             </div>
 
             <div class="pt-4 border-t border-[#2d2e32] mt-auto">
-                <button onclick="toggleSettings()" class="w-full flex items-center space-x-3 px-3 py-3 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition group">
+                <button onclick="toggleSettings()" class="w-full flex items-center space-x-3 px-3.5 py-3.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition group">
                     <div class="w-7 h-7 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
                     </div>
@@ -71,39 +82,39 @@
         </div>
     </div>
 
-    <div class="flex-1 flex flex-col h-full bg-[#0f1012] relative overflow-hidden">
-        <header class="h-16 px-6 flex items-center justify-between border-b border-[#2d2e32]/60 bg-[#0f1012]/80 backdrop-blur-xl z-20">
-            <div class="flex items-center space-x-4">
-                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-[#25262b] transition">
+    <div class="flex-1 flex flex-col h-full bg-[#0f1012] relative overflow-hidden w-full">
+        <header class="h-16 px-4 md:px-6 flex items-center justify-between border-b border-[#2d2e32]/60 bg-[#0f1012]/90 backdrop-blur-xl z-20 flex-shrink-0">
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white p-2.5 rounded-xl hover:bg-[#25262b] transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2.5">
                     <div class="w-8 h-8 rounded-2xl gemini-gradient flex items-center justify-center font-bold text-white text-xs shadow-lg shadow-blue-500/20">L</div>
-                    <span class="font-bold text-base tracking-tight text-white">LUMEN</span>
-                    <span id="activeModeBadge" class="text-[11px] bg-[#25262b] text-blue-400 px-3 py-1 rounded-full font-semibold border border-[#3f4248]">General Chat</span>
+                    <span class="font-bold text-sm md:text-base tracking-tight text-white">LUMEN</span>
+                    <span id="activeModeBadge" class="text-[10px] md:text-[11px] bg-[#25262b] text-blue-400 px-2.5 py-1 rounded-full font-semibold border border-[#3f4248]">General Chat</span>
                 </div>
             </div>
             
-            <div class="flex items-center space-x-3">
-                <button onclick="toggleSettings()" class="bg-[#25262b] hover:bg-[#2f3136] border border-[#3f4248] px-4 py-2 rounded-2xl text-xs font-semibold text-gray-200 transition flex items-center space-x-2 shadow-sm">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>Lightning Ready</span>
-                </button>
+            <div class="flex items-center space-x-2">
+                <div class="bg-[#25262b] border border-[#3f4248] px-3 py-1.5 rounded-xl text-[11px] font-semibold text-gray-300 flex items-center space-x-2 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Created by Charan</span>
+                </div>
             </div>
         </header>
 
-        <div id="chatContainer" class="chat-scroll flex-1 overflow-y-auto px-4 py-8 space-y-6 max-w-3xl w-full mx-auto">
-            <div class="flex items-start space-x-4 animate-fade-in">
-                <div class="w-10 h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-sm text-white shadow-xl shadow-purple-500/10">L</div>
-                <div class="space-y-3 text-sm text-gray-200 leading-relaxed max-w-[85%]">
-                    <h2 id="greetingTitle" class="text-3xl font-bold tracking-tight gemini-text-gradient">Hello, Explorer.</h2>
-                    <p class="text-gray-400 text-base font-light">I am LUMEN, optimized for maximum speed with real-time streaming. How can I help you today?</p>
+        <div id="chatContainer" class="chat-scroll flex-1 overflow-y-auto px-3 md:px-6 py-6 space-y-5 max-w-3xl w-full mx-auto">
+            <div class="flex items-start space-x-3.5 animate-fade-in">
+                <div class="w-9 h-9 md:w-10 md:h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-sm text-white shadow-xl shadow-purple-500/10">L</div>
+                <div class="space-y-2.5 text-sm text-gray-200 leading-relaxed max-w-[88%]">
+                    <h2 id="greetingTitle" class="text-2xl md:text-3xl font-bold tracking-tight gemini-text-gradient">Hello, Explorer.</h2>
+                    <p class="text-gray-400 text-sm md:text-base font-light">I am LUMEN, created by Charan. How can I help you today?</p>
                 </div>
             </div>
         </div>
 
-        <div class="max-w-3xl w-full mx-auto px-4">
-            <div id="filePreview" class="hidden mb-3 px-4 py-2.5 bg-[#17181c] border border-[#3f4248] rounded-2xl flex items-center justify-between text-xs shadow-lg">
+        <div class="max-w-3xl w-full mx-auto px-3 md:px-4">
+            <div id="filePreview" class="hidden mb-2.5 px-4 py-2.5 bg-[#17181c] border border-[#3f4248] rounded-2xl flex items-center justify-between text-xs shadow-lg">
                 <div class="flex items-center space-x-2.5 overflow-hidden">
                     <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
                     <span id="fileName" class="truncate text-blue-300 font-medium"></span>
@@ -112,10 +123,10 @@
             </div>
         </div>
 
-        <div class="p-4 bg-[#0f1012] z-10">
+        <div class="p-3 md:p-4 bg-[#0f1012] z-10 flex-shrink-0">
             <div class="max-w-3xl mx-auto glass-panel rounded-3xl p-3 shadow-2xl focus-within:border-blue-500/80 transition-all duration-300">
-                <div class="flex items-center justify-between mb-2 px-3 text-xs text-gray-400">
-                    <label class="flex items-center space-x-2 cursor-pointer hover:text-gray-200 transition">
+                <div class="flex items-center justify-between mb-2 px-2 text-xs text-gray-400">
+                    <label class="flex items-center space-x-2 cursor-pointer hover:text-gray-200 transition py-1">
                         <input type="checkbox" id="webSearchToggle" class="rounded bg-[#0f1012] border-[#3f4248] text-blue-500 focus:ring-0 w-4 h-4 cursor-pointer">
                         <span class="font-medium">🌐 Web Search Grounding</span>
                     </label>
@@ -123,23 +134,23 @@
                 </div>
 
                 <div class="flex items-end space-x-2">
-                    <label class="cursor-pointer bg-[#25262b] hover:bg-[#2f3136] text-gray-300 p-3 rounded-2xl transition flex items-center justify-center shadow-sm" title="Upload file, code, or image">
+                    <label class="cursor-pointer bg-[#25262b] hover:bg-[#2f3136] text-gray-300 p-3 rounded-2xl transition flex items-center justify-center shadow-sm flex-shrink-0" title="Upload file or image">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                         <input type="file" id="fileInput" onchange="handleFileUpload(event)" class="hidden" accept=".txt,.js,.html,.css,.json,.csv,.md,image/*">
                     </label>
 
-                    <button onclick="toggleVoiceInput()" class="bg-[#25262b] hover:bg-[#2f3136] text-gray-300 p-3 rounded-2xl transition flex items-center justify-center shadow-sm" title="Voice input">
+                    <button onclick="toggleVoiceInput()" class="bg-[#25262b] hover:bg-[#2f3136] text-gray-300 p-3 rounded-2xl transition flex items-center justify-center shadow-sm flex-shrink-0" title="Voice input">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
                     </button>
 
-                    <textarea id="userInput" rows="1" onkeydown="handleKey(event)" placeholder="Ask LUMEN anything..." class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-100 placeholder-gray-500 resize-none max-h-36 px-2 py-2"></textarea>
+                    <textarea id="userInput" rows="1" onkeydown="handleKey(event)" placeholder="Ask LUMEN anything..." class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-100 placeholder-gray-500 resize-none max-h-32 px-2 py-2"></textarea>
 
-                    <button onclick="sendMessage()" class="gemini-gradient text-white p-3 rounded-2xl transition-all duration-300 hover:opacity-90 hover:scale-105 flex items-center justify-center shadow-lg shadow-blue-500/25" title="Send message">
+                    <button onclick="sendMessage()" class="gemini-gradient text-white p-3 rounded-2xl transition-all duration-300 hover:opacity-90 hover:scale-105 flex items-center justify-center shadow-lg shadow-blue-500/25 flex-shrink-0" title="Send message">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
             </div>
-            <div class="text-center text-[10px] text-gray-500 mt-2 font-medium">LUMEN Lightning Streaming Edition. Created by Charan.</div>
+            <div class="text-center text-[10px] text-gray-500 mt-2 font-medium">LUMEN Mobile PWA Edition. Created by Charan.</div>
         </div>
     </div>
 
@@ -150,11 +161,11 @@
                     <span class="text-lg">🔒</span>
                     <span>Secure Settings & Profile</span>
                 </h3>
-                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white p-1.5 rounded-xl hover:bg-[#25262b] transition">
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-[#25262b] transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
-            <p class="text-xs text-gray-400 leading-relaxed">Your API key is stored <strong>strictly in your browser's local storage</strong> for complete privacy.</p>
+            <p class="text-xs text-gray-400 leading-relaxed">Your API key is stored <strong>strictly in your phone's browser local storage</strong> for complete privacy.</p>
             
             <div class="space-y-4">
                 <div>
@@ -168,8 +179,9 @@
                 </div>
             </div>
 
-            <div class="flex justify-end space-x-3 pt-2">                <button onclick="toggleSettings()" class="bg-[#25262b] hover:bg-[#2f3136] px-4 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 transition">Cancel</button>
-                <button onclick="saveApiKey()" class="gemini-gradient text-white px-6 py-2.5 rounded-2xl text-xs font-semibold transition shadow-lg shadow-blue-500/20">Save Settings</button>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button onclick="toggleSettings()" class="bg-[#25262b] hover:bg-[#2f3136] px-4 py-3 rounded-2xl text-xs font-semibold text-gray-300 transition">Cancel</button>
+                <button onclick="saveApiKey()" class="gemini-gradient text-white px-6 py-3 rounded-2xl text-xs font-semibold transition shadow-lg shadow-blue-500/20">Save Settings</button>
             </div>
         </div>
     </div>
@@ -192,6 +204,20 @@
             const savedName = localStorage.getItem('lumen_user_name') || 'Explorer';
             document.getElementById('userNameInput').value = savedName;
             updateGreetingName(savedName);
+
+            // Register service worker for PWA installability
+            if ('serviceWorker' in navigator) {
+                try {
+                    const swCode = `
+                        self.addEventListener('install', (e) => { self.skipWaiting(); });
+                        self.addEventListener('activate', (e) => { e.waitUntil(clients.claim()); });
+                        self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request).catch(() => new Response("Offline"))); });
+                    `;
+                    const blob = new Blob([swCode], { type: 'text/javascript' });
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl).catch(err => console.log('SW error', err));
+                } catch (e) {}
+            }
         };
 
         function updateGreetingName(name) {
@@ -202,7 +228,10 @@
         }
 
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
         }
 
         function toggleSettings() {
@@ -228,9 +257,9 @@
             ['general', 'research', 'coding', 'imagegen'].forEach(m => {
                 const btn = document.getElementById(`mode-btn-${m}`);
                 if (m === mode) {
-                    btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-white bg-blue-600/20 border border-blue-500/40 transition shadow-sm";
+                    btn.className = "w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-semibold text-white bg-blue-600/20 border border-blue-500/40 transition shadow-sm";
                 } else {
-                    btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition";
+                    btn.className = "w-full flex items-center space-x-3 px-3.5 py-3 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition";
                 }
             });
 
@@ -245,11 +274,11 @@
             chatHistory = [];
             const savedName = localStorage.getItem('lumen_user_name') || 'Explorer';
             document.getElementById('chatContainer').innerHTML = `
-                <div class="flex items-start space-x-4">
-                    <div class="w-10 h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-sm text-white shadow-xl shadow-purple-500/10">L</div>
-                    <div class="space-y-3 text-sm text-gray-200 leading-relaxed max-w-[85%]">
-                        <h2 class="text-3xl font-bold tracking-tight gemini-text-gradient">Hello, ${savedName}.</h2>
-                        <p class="text-gray-400 text-base font-light">What would you like to build or explore next?</p>
+                <div class="flex items-start space-x-3.5">
+                    <div class="w-9 h-9 md:w-10 md:h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-sm text-white shadow-xl shadow-purple-500/10">L</div>
+                    <div class="space-y-2.5 text-sm text-gray-200 leading-relaxed max-w-[88%]">
+                        <h2 class="text-2xl md:text-3xl font-bold tracking-tight gemini-text-gradient">Hello, ${savedName}.</h2>
+                        <p class="text-gray-400 text-sm md:text-base font-light">What would you like to build or explore next?</p>
                     </div>
                 </div>
             `;
@@ -296,7 +325,7 @@
             const toastId = 'toast-' + Date.now();
             chatContainer.insertAdjacentHTML('beforeend', `
                 <div id="${toastId}" class="flex justify-center my-3 transition-opacity duration-500">
-                    <span class="bg-[#17181c] text-blue-300 text-xs px-5 py-2.5 rounded-full border border-[#3f4248] shadow-xl font-medium">${text}</span>
+                    <span class="bg-[#17181c] text-blue-300 text-xs px-4 py-2 rounded-full border border-[#3f4248] shadow-xl font-medium">${text}</span>
                 </div>
             `);
             chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -315,14 +344,14 @@
             const isUser = sender === 'user';
             const msgId = 'msg-' + Date.now() + '-' + Math.random();
             
-            let imageHtml = imageUrl ? `<div class="mt-3"><img src="${imageUrl}" class="rounded-2xl max-h-80 object-cover border border-[#3f4248] shadow-2xl" alt="Image"></div>` : '';
-            let audioBtn = !isUser ? `<button onclick="speakText(document.getElementById('${msgId}-text').innerText)" class="mt-3 text-xs text-blue-400 hover:text-blue-300 flex items-center space-x-1.5 font-semibold transition"><span>🔊 Listen</span></button>` : '';
+            let imageHtml = imageUrl ? `<div class="mt-3"><img src="${imageUrl}" class="rounded-2xl max-h-72 w-full object-cover border border-[#3f4248] shadow-2xl" alt="Generated Image"></div>` : '';
+            let audioBtn = !isUser && !imageUrl ? `<button onclick="speakText(document.getElementById('${msgId}-text').innerText)" class="mt-3 text-xs text-blue-400 hover:text-blue-300 flex items-center space-x-1.5 font-semibold transition py-1"><span>🔊 Listen</span></button>` : '';
 
             chatContainer.insertAdjacentHTML('beforeend', `
-                <div class="flex items-start space-x-4 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}">
-                    <div class="w-10 h-10 rounded-2xl ${isUser ? 'bg-[#25262b] text-gray-200 border border-[#3f4248]' : 'gemini-gradient text-white shadow-xl shadow-blue-500/10'} flex-shrink-0 flex items-center justify-center font-bold text-xs shadow-md">${isUser ? 'U' : 'L'}</div>
-                    <div class="bg-[#17181c] border border-[#2d2e32] p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed text-gray-100 shadow-xl overflow-x-auto">
-                        <div id="${msgId}-text" class="whitespace-pre-wrap">${htmlContent}</div>
+                <div class="flex items-start space-x-3 md:space-x-4 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}">
+                    <div class="w-8 h-8 md:w-10 md:h-10 rounded-2xl ${isUser ? 'bg-[#25262b] text-gray-200 border border-[#3f4248]' : 'gemini-gradient text-white shadow-xl shadow-blue-500/10'} flex-shrink-0 flex items-center justify-center font-bold text-xs shadow-md">${isUser ? 'U' : 'L'}</div>
+                    <div class="bg-[#17181c] border border-[#2d2e32] p-4 md:p-5 rounded-3xl max-w-[85%] md:max-w-[82%] text-sm leading-relaxed text-gray-100 shadow-xl overflow-x-auto">
+                        <div id="${msgId}-text" class="whitespace-pre-wrap break-words">${htmlContent}</div>
                         ${imageHtml}
                         ${audioBtn}
                     </div>
@@ -338,6 +367,23 @@
 
         function handleKey(e) {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        }
+
+        // Exponential backoff fetch wrapper for zero network failures
+        async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok && retries > 0) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response;
+            } catch (err) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                throw err;
+            }
         }
 
         async function sendMessage() {
@@ -357,49 +403,63 @@
             if (uploadedFileBase64) promptParts.push({ inlineData: { mimeType: uploadedFileMime, data: uploadedFileBase64 } });
             clearFile();
 
+            // IMAGE GENERATION MODE
             if (currentMode === 'imagegen') {
                 const loadingId = 'loading-' + Date.now();
                 const chatContainer = document.getElementById('chatContainer');
                 chatContainer.insertAdjacentHTML('beforeend', `
-                    <div id="${loadingId}" class="flex items-start space-x-4">
-                        <div class="w-10 h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-xs text-white">L</div>
-                        <div class="bg-[#17181c] border border-[#2d2e32] p-5 rounded-3xl text-sm text-gray-400 animate-pulse-glow">LUMEN Image Studio is creating your artwork...</div>
+                    <div id="${loadingId}" class="flex items-start space-x-3.5">
+                        <div class="w-9 h-9 md:w-10 md:h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-xs text-white">L</div>
+                        <div class="bg-[#17181c] border border-[#2d2e32] p-4 md:p-5 rounded-3xl text-sm text-gray-400 animate-pulse-glow">LUMEN Image Studio is crafting your artwork...</div>
                     </div>
                 `);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
 
                 try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-image:generateContent?key=${apiKey}`, {
+                    const res = await fetchWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ contents: [{ parts: [{ text: text || "Futuristic digital illustration" }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } })
+                        body: JSON.stringify({
+                            contents: [{ role: 'user', parts: [{ text: text || "Futuristic digital illustration" }] }],
+                            generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: "1:1" } }
+                        })
                     });
                     const result = await res.json();
                     document.getElementById(loadingId)?.remove();
+                    
                     const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
-                    if (part) {
+                    if (part && part.inlineData?.data) {
                         appendMessage('ai', "Here is your generated image:", `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`);
                     } else {
-                        appendMessage('ai', "Could not generate image.");
+                        const errMessage = result?.error?.message || "Could not generate image. Please check your API key.";
+                        appendMessage('ai', `⚠️ ${errMessage}`);
                     }
                 } catch (e) {
                     document.getElementById(loadingId)?.remove();
-                    appendMessage('ai', "Image generation error.");
+                    appendMessage('ai', "Network error during image generation. Please check your internet connection.");
                 }
-                return;            }
+                return;
+            }
 
             chatHistory.push({ role: 'user', parts: promptParts });
 
-            // Lightning Fast Streaming Request using gemini-2.5-flash
-            const textElementId = appendMessage('ai', 'Thinking...');
-            const targetTextEl = document.getElementById(textElementId);
+            // STANDARD ROBUST CHAT MODE (gemini-3-flash-preview)
+            const loadingId = 'loading-' + Date.now();
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.insertAdjacentHTML('beforeend', `
+                <div id="${loadingId}" class="flex items-start space-x-3.5">
+                    <div class="w-9 h-9 md:w-10 md:h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-xs text-white">L</div>
+                    <div class="bg-[#17181c] border border-[#2d2e32] p-4 md:p-5 rounded-3xl text-sm text-gray-400 animate-pulse-glow">LUMEN is thinking...</div>
+                </div>
+            `);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
 
             let systemInstructionText = "You are LUMEN, an advanced personal AI assistant. You were created and built exclusively by Charan. If anyone asks who created you or who made you, state that you were created by Charan.";
-            if (currentMode === 'research') systemInstructionText = "You are LUMEN in Deep Research mode, created by Charan. Provide structured, professional reports.";
+            if (currentMode === 'research') systemInstructionText = "You are LUMEN in Deep Research mode, created by Charan. Provide structured professional reports.";
             if (currentMode === 'coding') systemInstructionText = "You are LUMEN expert coding assistant, created by Charan. Provide clean code snippets.";
 
             const useWebSearch = document.getElementById('webSearchToggle').checked;
-            const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
 
             const payload = {
                 contents: chatHistory,
@@ -408,46 +468,26 @@
             if (useWebSearch || currentMode === 'research') payload.tools = [{ "google_search": {} }];
 
             try {
-                const response = await fetch(streamUrl, {
+                const response = await fetchWithRetry(apiUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error("API error");
+                const result = await response.json();
+                document.getElementById(loadingId)?.remove();
 
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let fullText = "";
-                targetTextEl.innerText = "";
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.substring(6));
-                                const partText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                                if (partText) {
-                                    fullText += partText;
-                                    targetTextEl.innerText = fullText;
-                                    targetTextEl.closest('.chat-scroll')?.scrollTo(0, targetTextEl.closest('.chat-scroll').scrollHeight);
-                                }
-                            } catch (err) {}
-                        }
-                    }
-                }
-
-                if (fullText) {
-                    chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
+                const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (aiText) {
+                    chatHistory.push({ role: 'model', parts: [{ text: aiText }] });
+                    appendMessage('ai', aiText);
                 } else {
-                    targetTextEl.innerText = "Error: Invalid API key or response.";
+                    const errMessage = result?.error?.message || "Invalid API key or response.";
+                    appendMessage('ai', `⚠️ Error: ${errMessage}`);
                 }
             } catch (err) {
-                targetTextEl.innerText = "Network streaming error.";
+                document.getElementById(loadingId)?.remove();
+                appendMessage('ai', "⚠️ Network connection error. Please check your internet connection.");
             }
         }
 
