@@ -1,0 +1,468 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMEN - Lightning Fast AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f1012; color: #f1f3f4; }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #3c4043; border-radius: 9999px; }
+        @keyframes pulse-glow { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } }
+        .animate-pulse-glow { animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .gemini-gradient { background: linear-gradient(135deg, #4285f4 0%, #9b72cb 50%, #ea4335 100%); }
+        .gemini-text-gradient { background: linear-gradient(135deg, #8ab4f8 0%, #c58af9 50%, #f28b82 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-transition { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        pre { background: #1a1b1e; padding: 14px; border-radius: 14px; overflow-x: auto; border: 1px solid #2d2e32; margin-top: 10px; margin-bottom: 10px; }
+        code { font-family: monospace; font-size: 0.875rem; color: #a8c7fa; }
+        .glass-panel { background: rgba(30, 31, 34, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    </style>
+</head>
+<body class="h-full flex overflow-hidden selection:bg-blue-500 selection:text-white">
+
+    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-[#17181c] border-r border-[#2d2e32] flex flex-col justify-between transform -translate-x-full md:translate-x-0 sidebar-transition shadow-2xl">
+        <div class="p-4 flex flex-col h-full">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="startNewChat()" class="flex items-center space-x-2.5 bg-[#25262b] hover:bg-[#2f3136] border border-[#3f4248] px-4 py-2.5 rounded-2xl text-xs font-semibold text-white transition shadow-sm group">
+                    <svg class="w-4 h-4 text-blue-400 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    <span>New chat</span>
+                </button>
+                <button onclick="toggleSidebar()" class="md:hidden text-gray-400 hover:text-white p-2 rounded-xl hover:bg-[#25262b]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">Assistant Modes</div>
+            <div class="space-y-1.5 mb-6 flex-shrink-0">
+                <button onclick="setMode('general')" id="mode-btn-general" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-white bg-blue-600/20 border border-blue-500/40 transition shadow-sm">
+                    <span class="text-sm">💬</span>
+                    <span>General Chat</span>
+                </button>
+                <button onclick="setMode('research')" id="mode-btn-research" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
+                    <span class="text-sm">🔬</span>
+                    <span>Deep Research</span>
+                </button>
+                <button onclick="setMode('coding')" id="mode-btn-coding" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
+                    <span class="text-sm">🧑‍💻</span>
+                    <span>Coding Expert</span>
+                </button>
+                <button onclick="setMode('imagegen')" id="mode-btn-imagegen" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition">
+                    <span class="text-sm">🖼️</span>
+                    <span>Image Studio</span>
+                </button>
+            </div>
+
+            <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-3">Recent Activity</div>
+            <div id="chatHistoryList" class="chat-scroll flex-1 overflow-y-auto space-y-1 pr-1 text-xs">
+                <div class="px-3 py-2.5 rounded-xl text-gray-400 italic bg-[#212226]/50">Lightning Session</div>
+            </div>
+
+            <div class="pt-4 border-t border-[#2d2e32] mt-auto">
+                <button onclick="toggleSettings()" class="w-full flex items-center space-x-3 px-3 py-3 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition group">
+                    <div class="w-7 h-7 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+                    </div>
+                    <span>Settings & API Key</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-1 flex flex-col h-full bg-[#0f1012] relative overflow-hidden">
+        <header class="h-16 px-6 flex items-center justify-between border-b border-[#2d2e32]/60 bg-[#0f1012]/80 backdrop-blur-xl z-20">
+            <div class="flex items-center space-x-4">
+                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-[#25262b] transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-2xl gemini-gradient flex items-center justify-center font-bold text-white text-xs shadow-lg shadow-blue-500/20">L</div>
+                    <span class="font-bold text-base tracking-tight text-white">LUMEN</span>
+                    <span id="activeModeBadge" class="text-[11px] bg-[#25262b] text-blue-400 px-3 py-1 rounded-full font-semibold border border-[#3f4248]">General Chat</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleSettings()" class="bg-[#25262b] hover:bg-[#2f3136] border border-[#3f4248] px-4 py-2 rounded-2xl text-xs font-semibold text-gray-200 transition flex items-center space-x-2 shadow-sm">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Lightning Ready</span>
+                </button>
+            </div>
+        </header>
+
+        <div id="chatContainer" class="chat-scroll flex-1 overflow-y-auto px-4 py-8 space-y-6 max-w-3xl w-full mx-auto">
+            <div class="flex items-start space-x-4 animate-fade-in">
+                <div class="w-10 h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-sm text-white shadow-xl shadow-purple-500/10">L</div>
+                <div class="space-y-3 text-sm text-gray-200 leading-relaxed max-w-[85%]">
+                    <h2 id="greetingTitle" class="text-3xl font-bold tracking-tight gemini-text-gradient">Hello, Explorer.</h2>
+                    <p class="text-gray-400 text-base font-light">I am LUMEN, optimized for maximum speed with real-time streaming. How can I help you today?</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-3xl w-full mx-auto px-4">
+            <div id="filePreview" class="hidden mb-3 px-4 py-2.5 bg-[#17181c] border border-[#3f4248] rounded-2xl flex items-center justify-between text-xs shadow-lg">
+                <div class="flex items-center space-x-2.5 overflow-hidden">
+                    <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                    <span id="fileName" class="truncate text-blue-300 font-medium"></span>
+                </div>
+                <button onclick="clearFile()" class="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 rounded-lg hover:bg-rose-500/10 transition">Remove</button>
+            </div>
+        </div>
+
+        <div class="p-4 bg-[#0f1012] z-10">
+            <div class="max-w-3xl mx-auto glass-panel rounded-3xl p-3 shadow-2xl focus-within:border-blue-500/80 transition-all duration-300">
+                <div class="flex items-center justify-between mb-2 px-3 text-xs text-gray-400">
+                    <label class="flex items-center space-x-2 cursor-pointer hover:text-gray-200 transition">
+                        <input type="checkbox" id="webSearchToggle" class="rounded bg-[#0f1012] border-[#3f4248] text-blue-500 focus:ring-0 w-4 h-4 cursor-pointer">
+                        <span class="font-medium">🌐 Web Search Grounding</span>
+                    </label>
+                    <span id="inputModeIndicator" class="text-[11px] text-blue-400 font-semibold tracking-wide">General Mode</span>
+                </div>
+
+                <div class="flex items-end space-x-2">
+                    <label class="cursor-pointer bg-[#25262b] hover:bg-[#2f3136] text-gray-300 p-3 rounded-2xl transition flex items-center justify-center shadow-sm" title="Upload file, code, or image">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <input type="file" id="fileInput" onchange="handleFileUpload(event)" class="hidden" accept=".txt,.js,.html,.css,.json,.csv,.md,image/*">
+                    </label>
+
+                    <button onclick="toggleVoiceInput()" class="bg-[#25262b] hover:bg-[#2f3136] text-gray-300 p-3 rounded-2xl transition flex items-center justify-center shadow-sm" title="Voice input">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    </button>
+
+                    <textarea id="userInput" rows="1" onkeydown="handleKey(event)" placeholder="Ask LUMEN anything..." class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-100 placeholder-gray-500 resize-none max-h-36 px-2 py-2"></textarea>
+
+                    <button onclick="sendMessage()" class="gemini-gradient text-white p-3 rounded-2xl transition-all duration-300 hover:opacity-90 hover:scale-105 flex items-center justify-center shadow-lg shadow-blue-500/25" title="Send message">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="text-center text-[10px] text-gray-500 mt-2 font-medium">LUMEN Lightning Streaming Edition. Created by Charan.</div>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden p-4 animate-fade-in">
+        <div class="bg-[#17181c] border border-[#3f4248] rounded-3xl w-full max-w-md p-6 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-white flex items-center space-x-2.5">
+                    <span class="text-lg">🔒</span>
+                    <span>Secure Settings & Profile</span>
+                </h3>
+                <button onclick="toggleSettings()" class="text-gray-400 hover:text-white p-1.5 rounded-xl hover:bg-[#25262b] transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 leading-relaxed">Your API key is stored <strong>strictly in your browser's local storage</strong> for complete privacy.</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Gemini API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-[#0f1012] border border-[#3f4248] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 text-white transition">
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-2">Your Name</label>
+                    <input type="text" id="userNameInput" placeholder="Enter your name..." class="w-full bg-[#0f1012] border border-[#3f4248] rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 text-white transition">
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-2">                <button onclick="toggleSettings()" class="bg-[#25262b] hover:bg-[#2f3136] px-4 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 transition">Cancel</button>
+                <button onclick="saveApiKey()" class="gemini-gradient text-white px-6 py-2.5 rounded-2xl text-xs font-semibold transition shadow-lg shadow-blue-500/20">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'general';
+        let uploadedFileContent = null;
+        let uploadedFileBase64 = null;
+        let uploadedFileMime = null;
+        let uploadedFileName = "";
+        let chatHistory = [];
+
+        window.onload = () => {
+            const savedKey = localStorage.getItem('lumen_gemini_key');
+            if (savedKey) {
+                document.getElementById('apiKeyInput').value = savedKey;
+            } else {
+                toggleSettings();
+            }
+            const savedName = localStorage.getItem('lumen_user_name') || 'Explorer';
+            document.getElementById('userNameInput').value = savedName;
+            updateGreetingName(savedName);
+        };
+
+        function updateGreetingName(name) {
+            const greetingEl = document.getElementById('greetingTitle');
+            if (greetingEl) {
+                greetingEl.innerText = `Hello, ${name}.`;
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        }
+
+        function toggleSettings() {
+            document.getElementById('settingsModal').classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            const name = document.getElementById('userNameInput').value.trim() || 'Explorer';
+            if (!key) {
+                showToast("Please enter a valid API key.");
+                return;
+            }
+            localStorage.setItem('lumen_gemini_key', key);
+            localStorage.setItem('lumen_user_name', name);
+            updateGreetingName(name);
+            toggleSettings();
+            showToast("Settings saved securely!");
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            ['general', 'research', 'coding', 'imagegen'].forEach(m => {
+                const btn = document.getElementById(`mode-btn-${m}`);
+                if (m === mode) {
+                    btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-white bg-blue-600/20 border border-blue-500/40 transition shadow-sm";
+                } else {
+                    btn.className = "w-full flex items-center space-x-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-gray-300 hover:bg-[#25262b] hover:text-white transition";
+                }
+            });
+
+            const labels = { general: "General Chat", research: "Deep Research", coding: "Coding Expert", imagegen: "Image Studio" };
+            document.getElementById('activeModeBadge').innerText = labels[mode];
+            document.getElementById('inputModeIndicator').innerText = labels[mode];
+            showToast(`Switched to ${labels[mode]}`);
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        function startNewChat() {
+            chatHistory = [];
+            const savedName = localStorage.getItem('lumen_user_name') || 'Explorer';
+            document.getElementById('chatContainer').innerHTML = `
+                <div class="flex items-start space-x-4">
+                    <div class="w-10 h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-sm text-white shadow-xl shadow-purple-500/10">L</div>
+                    <div class="space-y-3 text-sm text-gray-200 leading-relaxed max-w-[85%]">
+                        <h2 class="text-3xl font-bold tracking-tight gemini-text-gradient">Hello, ${savedName}.</h2>
+                        <p class="text-gray-400 text-base font-light">What would you like to build or explore next?</p>
+                    </div>
+                </div>
+            `;
+            showToast("New chat started.");
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            uploadedFileName = file.name;
+            uploadedFileMime = file.type;
+
+            const reader = new FileReader();
+            if (file.type.startsWith('image/')) {
+                reader.onload = e => {
+                    uploadedFileBase64 = e.target.result.split(',')[1];
+                    document.getElementById('fileName').innerText = `Attached Image: ${uploadedFileName}`;
+                    document.getElementById('filePreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                reader.onload = e => {
+                    uploadedFileContent = e.target.result;
+                    uploadedFileBase64 = null;
+                    document.getElementById('fileName').innerText = `Attached File: ${uploadedFileName}`;
+                    document.getElementById('filePreview').classList.remove('hidden');
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function clearFile() {
+            uploadedFileContent = null;
+            uploadedFileBase64 = null;
+            uploadedFileMime = null;
+            uploadedFileName = "";
+            document.getElementById('fileInput').value = "";
+            document.getElementById('filePreview').classList.add('hidden');
+        }
+
+        function showToast(text) {
+            const chatContainer = document.getElementById('chatContainer');
+            const toastId = 'toast-' + Date.now();
+            chatContainer.insertAdjacentHTML('beforeend', `
+                <div id="${toastId}" class="flex justify-center my-3 transition-opacity duration-500">
+                    <span class="bg-[#17181c] text-blue-300 text-xs px-5 py-2.5 rounded-full border border-[#3f4248] shadow-xl font-medium">${text}</span>
+                </div>
+            `);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            setTimeout(() => document.getElementById(toastId)?.remove(), 3000);
+        }
+
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) return showToast("TTS not supported.");
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+            showToast("🔊 Speaking response...");
+        }
+
+        function appendMessage(sender, htmlContent, imageUrl = null) {
+            const chatContainer = document.getElementById('chatContainer');
+            const isUser = sender === 'user';
+            const msgId = 'msg-' + Date.now() + '-' + Math.random();
+            
+            let imageHtml = imageUrl ? `<div class="mt-3"><img src="${imageUrl}" class="rounded-2xl max-h-80 object-cover border border-[#3f4248] shadow-2xl" alt="Image"></div>` : '';
+            let audioBtn = !isUser ? `<button onclick="speakText(document.getElementById('${msgId}-text').innerText)" class="mt-3 text-xs text-blue-400 hover:text-blue-300 flex items-center space-x-1.5 font-semibold transition"><span>🔊 Listen</span></button>` : '';
+
+            chatContainer.insertAdjacentHTML('beforeend', `
+                <div class="flex items-start space-x-4 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}">
+                    <div class="w-10 h-10 rounded-2xl ${isUser ? 'bg-[#25262b] text-gray-200 border border-[#3f4248]' : 'gemini-gradient text-white shadow-xl shadow-blue-500/10'} flex-shrink-0 flex items-center justify-center font-bold text-xs shadow-md">${isUser ? 'U' : 'L'}</div>
+                    <div class="bg-[#17181c] border border-[#2d2e32] p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed text-gray-100 shadow-xl overflow-x-auto">
+                        <div id="${msgId}-text" class="whitespace-pre-wrap">${htmlContent}</div>
+                        ${imageHtml}
+                        ${audioBtn}
+                    </div>
+                </div>
+            `);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return msgId + '-text';
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        }
+
+        async function sendMessage() {
+            const inputEl = document.getElementById('userInput');
+            let text = inputEl.value.trim();
+            const apiKey = localStorage.getItem('lumen_gemini_key');
+
+            if (!apiKey) { toggleSettings(); return; }
+            if (!text && !uploadedFileContent && !uploadedFileBase64) return;
+
+            appendMessage('user', escapeHtml(text || `[Attached: ${uploadedFileName}]`));
+            inputEl.value = '';
+
+            let promptParts = [];
+            if (text) promptParts.push({ text: text });
+            if (uploadedFileContent) promptParts.push({ text: `[Attached File: ${uploadedFileName}]\n${uploadedFileContent}` });
+            if (uploadedFileBase64) promptParts.push({ inlineData: { mimeType: uploadedFileMime, data: uploadedFileBase64 } });
+            clearFile();
+
+            if (currentMode === 'imagegen') {
+                const loadingId = 'loading-' + Date.now();
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.insertAdjacentHTML('beforeend', `
+                    <div id="${loadingId}" class="flex items-start space-x-4">
+                        <div class="w-10 h-10 rounded-2xl gemini-gradient flex-shrink-0 flex items-center justify-center font-bold text-xs text-white">L</div>
+                        <div class="bg-[#17181c] border border-[#2d2e32] p-5 rounded-3xl text-sm text-gray-400 animate-pulse-glow">LUMEN Image Studio is creating your artwork...</div>
+                    </div>
+                `);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-image:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: text || "Futuristic digital illustration" }] }], generationConfig: { responseModalities: ['TEXT', 'IMAGE'] } })
+                    });
+                    const result = await res.json();
+                    document.getElementById(loadingId)?.remove();
+                    const part = result?.candidates?.[0]?.content?.parts?.find(p => p.inlineData);
+                    if (part) {
+                        appendMessage('ai', "Here is your generated image:", `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`);
+                    } else {
+                        appendMessage('ai', "Could not generate image.");
+                    }
+                } catch (e) {
+                    document.getElementById(loadingId)?.remove();
+                    appendMessage('ai', "Image generation error.");
+                }
+                return;            }
+
+            chatHistory.push({ role: 'user', parts: promptParts });
+
+            // Lightning Fast Streaming Request using gemini-2.5-flash
+            const textElementId = appendMessage('ai', 'Thinking...');
+            const targetTextEl = document.getElementById(textElementId);
+
+            let systemInstructionText = "You are LUMEN, an advanced personal AI assistant. You were created and built exclusively by Charan. If anyone asks who created you or who made you, state that you were created by Charan.";
+            if (currentMode === 'research') systemInstructionText = "You are LUMEN in Deep Research mode, created by Charan. Provide structured, professional reports.";
+            if (currentMode === 'coding') systemInstructionText = "You are LUMEN expert coding assistant, created by Charan. Provide clean code snippets.";
+
+            const useWebSearch = document.getElementById('webSearchToggle').checked;
+            const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse&key=${apiKey}`;
+
+            const payload = {
+                contents: chatHistory,
+                systemInstruction: { parts: [{ text: systemInstructionText }] }
+            };
+            if (useWebSearch || currentMode === 'research') payload.tools = [{ "google_search": {} }];
+
+            try {
+                const response = await fetch(streamUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error("API error");
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullText = "";
+                targetTextEl.innerText = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                const partText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                                if (partText) {
+                                    fullText += partText;
+                                    targetTextEl.innerText = fullText;
+                                    targetTextEl.closest('.chat-scroll')?.scrollTo(0, targetTextEl.closest('.chat-scroll').scrollHeight);
+                                }
+                            } catch (err) {}
+                        }
+                    }
+                }
+
+                if (fullText) {
+                    chatHistory.push({ role: 'model', parts: [{ text: fullText }] });
+                } else {
+                    targetTextEl.innerText = "Error: Invalid API key or response.";
+                }
+            } catch (err) {
+                targetTextEl.innerText = "Network streaming error.";
+            }
+        }
+
+        function toggleVoiceInput() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return showToast("Speech recognition not supported.");
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';
+            recognition.onresult = e => {
+                document.getElementById('userInput').value = e.results[0][0].transcript;
+                showToast("Voice captured!");
+            };
+            recognition.start();
+            showToast("🎙️ Listening... Speak now.");
+        }
+    </script>
+</body>
+</html>
+```
